@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { Trip, TripLocation } from '@/lib/types';
 import 'leaflet/dist/leaflet.css';
+import { format, parseISO } from 'date-fns';
+import { Calendar } from 'lucide-react';
 
 // Fix for default marker icons in Next.js
 const createNumberedIcon = (number: number, isSelected: boolean = false) => {
@@ -57,6 +59,76 @@ function FitBounds({ locations }: { locations: TripLocation[] }) {
   return null;
 }
 
+// Component to handle opening popups when selection changes
+function PopupController({ 
+  selectedLocationId, 
+  markerRefs 
+}: { 
+  selectedLocationId?: string | null; 
+  markerRefs: React.MutableRefObject<Map<string, L.Marker>>; 
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (selectedLocationId) {
+      const marker = markerRefs.current.get(selectedLocationId);
+      if (marker) {
+        marker.openPopup();
+        // Optionally pan to the marker
+        const latlng = marker.getLatLng();
+        map.panTo(latlng, { animate: true, duration: 0.5 });
+      }
+    }
+  }, [selectedLocationId, markerRefs, map]);
+
+  return null;
+}
+
+// Custom popup content component
+function PopupContent({ location, index }: { location: TripLocation; index: number }) {
+  return (
+    <div className="min-w-[220px] p-4">
+      {/* Header with number badge and name */}
+      <div className="flex items-start gap-3 mb-3">
+        <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex-shrink-0">
+          {index + 1}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-sm leading-tight">{location.name}</h3>
+          {location.date && (
+            <div className="flex items-center gap-1.5 mt-1.5 text-xs text-muted-foreground">
+              <Calendar className="h-3 w-3" />
+              <span>{format(parseISO(location.date), 'EEE, MMM d, yyyy')}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Activities */}
+      {location.activities.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Activities</p>
+          <div className="flex flex-wrap gap-1">
+            {location.activities.slice(0, 4).map((activity, i) => (
+              <span 
+                key={i} 
+                className="text-xs bg-primary/15 text-primary px-2 py-0.5 rounded"
+              >
+                {activity}
+              </span>
+            ))}
+            {location.activities.length > 4 && (
+              <span className="text-xs text-muted-foreground px-1">
+                +{location.activities.length - 4} more
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface TripMapProps {
   trip: Trip;
   selectedLocationId?: string | null;
@@ -64,6 +136,9 @@ interface TripMapProps {
 }
 
 export function TripMap({ trip, selectedLocationId, onLocationSelect }: TripMapProps) {
+  // Store marker refs for programmatic popup opening
+  const markerRefs = useRef<Map<string, L.Marker>>(new Map());
+
   // Sort locations by order
   const sortedLocations = useMemo(
     () => [...trip.locations].sort((a, b) => a.order - b.order),
@@ -82,6 +157,13 @@ export function TripMap({ trip, selectedLocationId, onLocationSelect }: TripMapP
     ? [sortedLocations[0].lat, sortedLocations[0].lng] as L.LatLngTuple
     : defaultCenter;
 
+  // Create a location-to-index map
+  const locationIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    sortedLocations.forEach((loc, idx) => map.set(loc.id, idx));
+    return map;
+  }, [sortedLocations]);
+
   return (
     <MapContainer
       center={center}
@@ -95,6 +177,7 @@ export function TripMap({ trip, selectedLocationId, onLocationSelect }: TripMapP
       />
       
       <FitBounds locations={sortedLocations} />
+      <PopupController selectedLocationId={selectedLocationId} markerRefs={markerRefs} />
       
       {/* Route polyline */}
       {routeCoordinates.length > 1 && (
@@ -118,24 +201,16 @@ export function TripMap({ trip, selectedLocationId, onLocationSelect }: TripMapP
           eventHandlers={{
             click: () => onLocationSelect?.(location.id),
           }}
+          ref={(marker) => {
+            if (marker) {
+              markerRefs.current.set(location.id, marker);
+            } else {
+              markerRefs.current.delete(location.id);
+            }
+          }}
         >
           <Popup>
-            <div className="min-w-[180px]">
-              <h3 className="font-semibold text-base mb-1">{location.name}</h3>
-              {location.date && (
-                <p className="text-sm text-gray-600 mb-2">{location.date}</p>
-              )}
-              {location.activities.length > 0 && (
-                <ul className="text-sm list-disc list-inside">
-                  {location.activities.slice(0, 3).map((activity, i) => (
-                    <li key={i} className="truncate">{activity}</li>
-                  ))}
-                  {location.activities.length > 3 && (
-                    <li className="text-gray-500">+{location.activities.length - 3} more</li>
-                  )}
-                </ul>
-              )}
-            </div>
+            <PopupContent location={location} index={locationIndexMap.get(location.id) ?? index} />
           </Popup>
         </Marker>
       ))}

@@ -148,22 +148,37 @@
 .leaflet-control { z-index: 7 !important; }
 
 .leaflet-popup-content-wrapper {
-  background: hsl(var(--popover));
-  color: hsl(var(--popover-foreground));
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border-radius: 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  padding: 0;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
 }
 
 .leaflet-popup-tip {
-  background: hsl(var(--popover));
+  background: var(--popover);
+  border-left: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 .leaflet-popup-close-button {
-  color: hsl(var(--muted-foreground)) !important;
+  color: var(--muted-foreground) !important;
+  top: 8px !important;
+  right: 8px !important;
+  width: 20px !important;
+  height: 20px !important;
+  font-size: 18px !important;
+  font-weight: 400 !important;
 }
 
 .leaflet-popup-close-button:hover {
-  color: hsl(var(--foreground)) !important;
+  color: var(--foreground) !important;
+  background: var(--muted) !important;
 }
 
 .custom-marker {
