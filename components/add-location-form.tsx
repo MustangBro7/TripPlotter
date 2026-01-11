@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,8 +8,17 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { format } from 'date-fns';
-import { Plus, CalendarIcon, Loader2, MapPin } from 'lucide-react';
+import { Plus, CalendarIcon, Loader2, MapPin, Search } from 'lucide-react';
 import type { TripLocation } from '@/lib/types';
+
+interface PlaceSuggestion {
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
+  type: string;
+  class: string;
+}
 
 interface AddLocationFormProps {
   onAdd: (location: Omit<TripLocation, 'id' | 'order'>) => void;
@@ -18,38 +27,96 @@ interface AddLocationFormProps {
 export function AddLocationForm({ onAdd }: AddLocationFormProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [date, setDate] = useState<Date | undefined>();
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
-  const [isGeocoding, setIsGeocoding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  const handleGeocode = async () => {
-    if (!name.trim()) return;
-    
-    setIsGeocoding(true);
-    setError(null);
+  // Debounced search for location suggestions
+  const searchLocations = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setIsSearching(true);
     
     try {
-      // Use Nominatim for geocoding (free, no API key)
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(name)}&limit=1`,
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
         { headers: { 'User-Agent': 'TripPlotter/1.0' } }
       );
-      const results = await response.json();
-      
-      if (results.length > 0) {
-        setLat(results[0].lat);
-        setLng(results[0].lon);
-      } else {
-        setError('Location not found. Please enter coordinates manually.');
-      }
+      const results: PlaceSuggestion[] = await response.json();
+      setSuggestions(results);
+      setShowSuggestions(results.length > 0);
     } catch {
-      setError('Failed to geocode. Please enter coordinates manually.');
+      setSuggestions([]);
     } finally {
-      setIsGeocoding(false);
+      setIsSearching(false);
     }
+  }, []);
+
+  // Handle search input change with debounce
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setError(null);
+    
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Debounce the search
+    searchTimeoutRef.current = setTimeout(() => {
+      searchLocations(value);
+    }, 300);
   };
+
+  // Handle suggestion selection
+  const handleSelectSuggestion = (suggestion: PlaceSuggestion) => {
+    // Extract a cleaner name from display_name (first part before comma)
+    const cleanName = suggestion.display_name.split(',')[0].trim();
+    setName(cleanName);
+    setSearchQuery(suggestion.display_name);
+    setLat(suggestion.lat);
+    setLng(suggestion.lon);
+    setShowSuggestions(false);
+    setSuggestions([]);
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current && 
+        !suggestionsRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSubmit = () => {
     if (!name.trim() || !lat || !lng) return;
@@ -64,11 +131,21 @@ export function AddLocationForm({ onAdd }: AddLocationFormProps) {
 
     // Reset form
     setName('');
+    setSearchQuery('');
     setDate(undefined);
     setLat('');
     setLng('');
     setError(null);
+    setSuggestions([]);
     setOpen(false);
+  };
+
+  // Format suggestion display - show type and truncate if needed
+  const formatSuggestion = (suggestion: PlaceSuggestion) => {
+    const parts = suggestion.display_name.split(',');
+    const mainName = parts[0].trim();
+    const secondary = parts.slice(1, 3).join(',').trim();
+    return { mainName, secondary };
   };
 
   return (
@@ -90,56 +167,66 @@ export function AddLocationForm({ onAdd }: AddLocationFormProps) {
         </DialogHeader>
         
         <div className="space-y-5 pt-2">
+          {/* Search Input with Autocomplete */}
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Location Name</Label>
-            <div className="flex gap-2">
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Sapa Stone Church"
-                className="flex-1"
-              />
-              <Button 
-                variant="secondary" 
-                onClick={handleGeocode}
-                disabled={!name.trim() || isGeocoding}
-                className="px-4"
-              >
-                {isGeocoding ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Find'
+            <Label htmlFor="search" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Search Location</Label>
+            <div className="relative">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  ref={inputRef}
+                  id="search"
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  placeholder="Search for a place..."
+                  className="pl-10 pr-10"
+                  autoComplete="off"
+                />
+                {isSearching && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                 )}
-              </Button>
+              </div>
+              
+              {/* Suggestions Dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div 
+                  ref={suggestionsRef}
+                  className="absolute z-50 w-full mt-1 bg-popover border border-border shadow-lg max-h-[240px] overflow-y-auto"
+                >
+                  {suggestions.map((suggestion) => {
+                    const { mainName, secondary } = formatSuggestion(suggestion);
+                    return (
+                      <button
+                        key={suggestion.place_id}
+                        type="button"
+                        className="w-full px-3 py-2.5 text-left hover:bg-muted/50 transition-colors border-b border-border/50 last:border-b-0 flex items-start gap-3"
+                        onClick={() => handleSelectSuggestion(suggestion)}
+                      >
+                        <MapPin className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{mainName}</p>
+                          {secondary && (
+                            <p className="text-xs text-muted-foreground truncate">{secondary}</p>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="lat" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Latitude</Label>
-              <Input
-                id="lat"
-                type="number"
-                step="any"
-                value={lat}
-                onChange={(e) => setLat(e.target.value)}
-                placeholder="21.0285"
-                className="font-mono text-sm"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lng" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Longitude</Label>
-              <Input
-                id="lng"
-                type="number"
-                step="any"
-                value={lng}
-                onChange={(e) => setLng(e.target.value)}
-                placeholder="105.8542"
-                className="font-mono text-sm"
-              />
-            </div>
+            
+            {/* Selected location indicator */}
+            {name && lat && lng && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-primary/10 px-3 py-2 rounded border border-primary/20">
+                <MapPin className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                <span className="truncate font-medium text-foreground">{name}</span>
+                <span className="text-muted-foreground font-mono ml-auto">
+                  {parseFloat(lat).toFixed(4)}, {parseFloat(lng).toFixed(4)}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -151,7 +238,7 @@ export function AddLocationForm({ onAdd }: AddLocationFormProps) {
                   {date ? format(date, 'PPP') : <span className="text-muted-foreground">Pick a date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className="w-auto p-0 z-[200]">
                 <Calendar
                   mode="single"
                   selected={date}
