@@ -81,9 +81,12 @@ export function ItineraryInput() {
   return (
     <div className="w-full max-w-2xl space-y-6">
       <div className="space-y-2 text-center">
-        <div className="flex items-center justify-center gap-2 text-primary">
-          <MapPin className="h-8 w-8" />
-          <Plane className="h-6 w-6" />
+        <div className="flex items-center justify-center">
+          <img 
+            src="/app-logo-zoom-in--t3chat--1.png" 
+            alt="Trip Plotter Logo" 
+            className="h-16 w-16"
+          />
         </div>
         <h1 className="text-4xl font-bold tracking-tight">Trip Plotter</h1>
         <p className="text-muted-foreground text-lg">
