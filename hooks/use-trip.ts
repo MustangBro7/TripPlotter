@@ -51,14 +51,62 @@ export function useTrip() {
     setTrip(newTrip);
   }, []);
 
+  // Helper function to sort locations by date and rebuild connections
+  const sortLocationsByDate = useCallback((locations: TripLocation[]): { locations: TripLocation[]; connections: TripConnection[] } => {
+    // Separate locations with and without dates
+    const withDates = locations.filter(loc => loc.date);
+    const withoutDates = locations.filter(loc => !loc.date);
+
+    // Sort locations with dates by date (earliest first)
+    const sortedWithDates = [...withDates].sort((a, b) => {
+      if (!a.date || !b.date) return 0;
+      return a.date.localeCompare(b.date);
+    });
+
+    // Maintain relative order for locations without dates (by current order)
+    const sortedWithoutDates = [...withoutDates].sort((a, b) => a.order - b.order);
+
+    // Combine: dated locations first, then undated locations
+    const sorted = [...sortedWithDates, ...sortedWithoutDates];
+
+    // Reassign order values
+    const reordered = sorted.map((loc, idx) => ({ ...loc, order: idx }));
+
+    // Rebuild connections based on new order
+    const newConnections: TripConnection[] = [];
+    for (let i = 0; i < reordered.length - 1; i++) {
+      newConnections.push({
+        fromId: reordered[i].id,
+        toId: reordered[i + 1].id,
+      });
+    }
+
+    return { locations: reordered, connections: newConnections };
+  }, []);
+
   const updateLocation = useCallback((locationId: string, updates: Partial<TripLocation>) => {
-    updateTrip((prev) => ({
-      ...prev,
-      locations: prev.locations.map((loc) =>
+    updateTrip((prev) => {
+      // Update the location
+      const updatedLocations = prev.locations.map((loc) =>
         loc.id === locationId ? { ...loc, ...updates } : loc
-      ),
-    }));
-  }, [updateTrip]);
+      );
+
+      // If date was updated (set or removed), reorder by date
+      if ('date' in updates) {
+        const { locations: sortedLocations, connections: newConnections } = sortLocationsByDate(updatedLocations);
+        return {
+          ...prev,
+          locations: sortedLocations,
+          connections: newConnections,
+        };
+      }
+
+      return {
+        ...prev,
+        locations: updatedLocations,
+      };
+    });
+  }, [updateTrip, sortLocationsByDate]);
 
   const addLocation = useCallback((location: Omit<TripLocation, 'id' | 'order'>) => {
     updateTrip((prev) => {
@@ -72,7 +120,20 @@ export function useTrip() {
         order: newOrder,
       };
 
-      // Create connection from last location to new one
+      // Add the new location to the list
+      const updatedLocations = [...prev.locations, newLocation];
+
+      // If the new location has a date, reorder all locations by date
+      if (location.date) {
+        const { locations: sortedLocations, connections: newConnections } = sortLocationsByDate(updatedLocations);
+        return {
+          ...prev,
+          locations: sortedLocations,
+          connections: newConnections,
+        };
+      }
+
+      // If no date, add to end and create connection from last location
       const newConnections = [...prev.connections];
       if (prev.locations.length > 0) {
         const lastLocation = prev.locations.reduce((a, b) => 
@@ -86,11 +147,11 @@ export function useTrip() {
 
       return {
         ...prev,
-        locations: [...prev.locations, newLocation],
+        locations: updatedLocations,
         connections: newConnections,
       };
     });
-  }, [updateTrip]);
+  }, [updateTrip, sortLocationsByDate]);
 
   const removeLocation = useCallback((locationId: string) => {
     updateTrip((prev) => ({
