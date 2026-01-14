@@ -118,6 +118,7 @@ export function BottomSheet({
       {isMinimized && (
         <div className="absolute inset-x-0 top-10 px-4 flex items-center gap-3">
           <GripHorizontal className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Swipe up to view trip details</span>
         </div>
       )}
     </div>
