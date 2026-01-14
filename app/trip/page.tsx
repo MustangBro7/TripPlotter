@@ -106,6 +106,7 @@ export default function TripPage() {
             trip={trip}
             selectedLocationId={selectedLocationId}
             onLocationSelect={setSelectedLocationId}
+            isMobile={true}
           />
         </div>
 

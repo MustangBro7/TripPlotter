@@ -133,9 +133,10 @@ interface TripMapProps {
   trip: Trip;
   selectedLocationId?: string | null;
   onLocationSelect?: (locationId: string) => void;
+  isMobile?: boolean;
 }
 
-export function TripMap({ trip, selectedLocationId, onLocationSelect }: TripMapProps) {
+export function TripMap({ trip, selectedLocationId, onLocationSelect, isMobile = false }: TripMapProps) {
   // Store marker refs for programmatic popup opening
   const markerRefs = useRef<Map<string, L.Marker>>(new Map());
 
@@ -170,6 +171,7 @@ export function TripMap({ trip, selectedLocationId, onLocationSelect }: TripMapP
       zoom={7}
       className="h-full w-full"
       style={{ background: '#1a1a2e' }}
+      zoomControl={!isMobile}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
