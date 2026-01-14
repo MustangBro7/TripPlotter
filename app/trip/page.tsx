@@ -39,7 +39,7 @@ export default function TripPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-background">
+      <div className="h-full flex items-center justify-center bg-background">
         <div className="space-y-4 text-center">
           <Skeleton className="h-8 w-48 mx-auto" />
           <Skeleton className="h-4 w-32 mx-auto" />
@@ -56,7 +56,7 @@ export default function TripPage() {
   // No trip data
   if (!trip) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-background p-6">
+      <div className="h-full flex flex-col items-center justify-center bg-background p-6">
         <div className="text-center space-y-4 max-w-md">
           <MapPin className="h-12 w-12 mx-auto text-muted-foreground" />
           <h1 className="text-2xl font-bold">No Trip Found</h1>
@@ -77,9 +77,9 @@ export default function TripPage() {
   // Mobile Layout
   if (isMobile) {
     return (
-      <div className="h-screen flex flex-col bg-background">
-        {/* Floating Header */}
-        <header className="absolute top-0 left-0 right-0 z-20 p-3 pointer-events-none">
+      <div className="h-full flex flex-col bg-background overflow-hidden">
+        {/* Floating Header - positioned below safe area */}
+        <header className="absolute top-0 left-0 right-0 z-20 p-3 pt-[calc(0.75rem+var(--safe-area-top,0px))] pointer-events-none">
           <div className="flex items-center justify-between">
             <Link 
               href="/" 
@@ -127,7 +127,7 @@ export default function TripPage() {
 
   // Desktop Layout
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-background">
       {/* Header */}
       <header className="h-12 border-b border-border/50 flex items-center justify-between px-4 flex-shrink-0 bg-background/95 backdrop-blur-sm z-10">
         <div className="flex items-center gap-4">

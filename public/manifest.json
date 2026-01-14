@@ -1,28 +1,38 @@
 {
-    "display": "standalone",
-    "short_name": "Trip Plotter",
     "name": "Trip Plotter",
+    "short_name": "Trip Plotter",
     "description": "Transform your travel itinerary into an interactive map. Plan, edit, and share your journey with ease.",
+    "start_url": "/",
+    "scope": "/",
+    "display_override": ["fullscreen", "standalone", "minimal-ui"],
+    "display": "standalone",
+    "orientation": "portrait-primary",
     "icons": [
         {
             "src": "/app-logo-zoom-in--t3chat--1.png",
             "sizes": "1024x1024",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "any"
+        },
+        {
+            "src": "/app-logo-zoom-in--t3chat--1.png",
+            "sizes": "1024x1024",
+            "type": "image/png",
+            "purpose": "maskable"
         },
         {
             "src": "/icon-192.png",
             "sizes": "192x192",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "any"
         },
         {
             "src": "/icon-512.png",
             "sizes": "512x512",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "any"
         }
     ],
-    "theme_color": "#6D28D9",
-    "background_color": "#ffffff"
+    "theme_color": "#1a1a1f",
+    "background_color": "#1a1a1f"
 }

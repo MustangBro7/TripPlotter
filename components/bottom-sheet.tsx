@@ -92,6 +92,7 @@ export function BottomSheet({
       className="fixed bottom-0 left-0 right-0 z-30 bg-background rounded-t-2xl shadow-[0_-4px_30px_rgba(0,0,0,0.3)] transition-[height] will-change-[height]"
       style={{ 
         height: sheetHeight,
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         transitionDuration: isDragging ? '0ms' : '300ms',
       }}
     >
@@ -109,7 +110,7 @@ export function BottomSheet({
       {/* Content */}
       <div 
         className="overflow-y-auto overscroll-contain px-1"
-        style={{ height: `calc(100% - 40px)` }}
+        style={{ height: `calc(100% - 40px - env(safe-area-inset-bottom, 0px))` }}
       >
         {children}
       </div>
