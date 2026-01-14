@@ -29,7 +29,6 @@ interface TripMapWrapperProps {
   trip: Trip;
   selectedLocationId?: string | null;
   onLocationSelect?: (locationId: string) => void;
-  isMobile?: boolean;
 }
 
 export function TripMapWrapper(props: TripMapWrapperProps) {

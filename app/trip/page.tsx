@@ -79,7 +79,7 @@ export default function TripPage() {
     return (
       <div className="h-full flex flex-col bg-background overflow-hidden">
         {/* Floating Header - positioned below safe area */}
-        <header className="absolute top-0 left-0 right-0 z-20 p-3 pt-[calc(0.75rem+var(--safe-area-top,0px))] pointer-events-none">
+        <header className="absolute top-0 left-0 right-0 z-20 p-3 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] pointer-events-none">
           <div className="flex items-center justify-between">
             <Link 
               href="/" 
@@ -106,7 +106,6 @@ export default function TripPage() {
             trip={trip}
             selectedLocationId={selectedLocationId}
             onLocationSelect={setSelectedLocationId}
-            isMobile={true}
           />
         </div>
 
