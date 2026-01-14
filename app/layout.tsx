@@ -18,21 +18,6 @@ export const metadata: Metadata = {
   title: "Trip Plotter - Visualize Your Adventures",
   description: "Transform your travel itinerary into an interactive map. Plan, edit, and share your journey with ease.",
   keywords: ["travel", "itinerary", "map", "trip planner", "vacation"],
-  icons: {
-    icon: "/app-logo-zoom-in--t3chat--1.png",
-    apple: "/icon-192.png",
-  },
-  openGraph: {
-    title: "Trip Plotter - Visualize Your Adventures",
-    description: "Transform your travel itinerary into an interactive map. Plan, edit, and share your journey with ease.",
-    images: ["/icon-512.png"],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Trip Plotter - Visualize Your Adventures",
-    description: "Transform your travel itinerary into an interactive map. Plan, edit, and share your journey with ease.",
-    images: ["/icon-512.png"],
-  },
 };
 
 export default function RootLayout({
@@ -44,9 +29,6 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/app-logo-zoom-in--t3chat--1.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
-        <meta name="theme-color" content="#6D28D9" />
       </head>
       <body
         className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased`}
