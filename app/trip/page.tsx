@@ -63,7 +63,7 @@ export default function TripPage() {
           <p className="text-muted-foreground">
             It looks like you haven&apos;t created a trip yet, or the link is invalid.
           </p>
-          <Link href="/">
+          <Link href="/plan">
             <Button>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Create a New Trip
@@ -82,7 +82,7 @@ export default function TripPage() {
         <header className="absolute top-0 left-0 right-0 z-20 p-3 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] pointer-events-none">
           <div className="flex items-center justify-between">
             <Link 
-              href="/" 
+              href="/plan" 
               className="pointer-events-auto flex items-center gap-2 bg-background/90 backdrop-blur-sm px-3 py-2 rounded-full shadow-lg border border-border/50"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -132,7 +132,7 @@ export default function TripPage() {
       <header className="h-12 border-b border-border/50 flex items-center justify-between px-4 flex-shrink-0 bg-background/95 backdrop-blur-sm z-10">
         <div className="flex items-center gap-4">
           <Link 
-            href="/" 
+            href="/plan" 
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
